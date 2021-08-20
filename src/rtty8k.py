@@ -7,13 +7,6 @@ smp/45.45
 =1秒のサンプル数/45.45
 =1bitあたりのサンプル数
 =サンプル数/bit
-
-176個/bit　の0と1の数を比較して，0/1 を決めるが，
-値の境界は安定しない（ノイズ云々）ため，
-大体176個の内，25%(44個，経験則)を超えたあたりから，0と1の数を集計し，比較．
-実際は，25%超えたあたりから，大体0/1続きのため，26%~30%あたりでわかる（らしい．要検証）ため，
-残りのサンプル（120個くらい）は無視しても大丈夫（要検証）
-ただし，そのまま取るとスタート/ストップビットと重ならないため，工夫が必要
 """
 def main():
 	fname='./rtty3s.wav' # should be specify the filename.
@@ -34,7 +27,6 @@ def main():
 	sq=[]
 	si=[]
 
-	baudot_result = []
 	whole_smp = []
 	for j in range(waveFile.getnframes()):
 		buf = waveFile.readframes(1) # bytes object
@@ -53,32 +45,28 @@ def main():
 			mq.pop(0);mi.pop(0);sq.pop(0);si.pop(0)
 	waveFile.close()
 
-	# for item in result:
-	# 	print(item, end="")
-	# print("")
+	# 最初の1 -> 0(mark -> space)に変わったとこを探す
+	mark_to_space_index = find_mark_to_space_index(whole_smp)
+	remove_first_noize_smp = whole_smp[mark_to_space_index:]
 
-	# whole_smp
 	divide_one_bit = [] # 176個ずつに分けた
 	rmv_formar_bit = [] # 前半25%を除いた
 	bit_chunk = [] # 0/1の数から大小比較した結果
 	start = 0
-	for item in whole_smp:
-		bit_buf = whole_smp[start:start+num_of_one_bit_smp:1]
+	for item in remove_first_noize_smp:
+		bit_buf = remove_first_noize_smp[start:start+num_of_one_bit_smp:1] # 176個ずつ
 		divide_one_bit.append(bit_buf)
 		rmv_formar_bit.append(bit_buf[stable_smp_start:])
 		start += num_of_one_bit_smp
-		if start >= len(whole_smp):
+		if start >= len(remove_first_noize_smp): # 境界
 			break
-	divide_one_bit = divide_one_bit[:-1] # 最後の端は削除
 
-	for item in rmv_formar_bit:
-		zero_one = decide_bit_zero_or_one(item)
+	for item in divide_one_bit:
+		zero_one = item[stable_smp_start] # 25%すぎたとこ
 		bit_chunk.append(zero_one)
-	# print(bit_chunk)
+
 	data_bit_chunk = gen_bit_chunk(bit_chunk)
-	# print(data_bit_chunk)
 	baudot_result = []
-	mode = "Letters"
 	for item in data_bit_chunk:
 		decode_result = decode_rtty(item, mode)
 		# print(decode_result)
@@ -90,8 +78,15 @@ def main():
 		print(item, end="")
 	print("")
 
+# mark -> space(1 -> 0)に移る瞬間のindex(space側)を返す
+def find_mark_to_space_index(bit_buf):
+	for i in range(len(bit_buf)):
+		if bit_buf[i] == 1 and bit_buf[i + 1] == 0:
+			i += 1 # space index
+			return i
+	return None
 
-def gen_bit_chunk(bit_buf, start_bit='0', stop_bit='1'):
+def gen_bit_chunk(bit_buf, start_bit=0, stop_bit=1):
 	start_bit_index = None
 	bit_index = 0 #5個分かぞえるためのindex
 	bit_chunk = [] # data bit(5bit)
@@ -107,19 +102,19 @@ def gen_bit_chunk(bit_buf, start_bit='0', stop_bit='1'):
 			else:
 				if bit_buf[index] == stop_bit:
 					result.append(bit_chunk)
-					start_bit_index = None
-					bit_index = 0
-					bit_chunk = []
+				start_bit_index = None
+				bit_index = 0
+				bit_chunk = []
 	return result
 
 
-def decide_bit_zero_or_one(bit_buf):
-	zero_num = bit_buf.count(0)
-	one_num = bit_buf.count(1)
-	if zero_num > one_num:
-		return "0"
-	else:
-		return "1"
+# def decide_bit_zero_or_one(bit_buf):
+# 	zero_num = bit_buf.count(0)
+# 	one_num = bit_buf.count(1)
+# 	if zero_num > one_num:
+# 		return "0"
+# 	else:
+# 		return "1"
 
 
 # baudt conversion
