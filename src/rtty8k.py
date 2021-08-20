@@ -91,7 +91,9 @@ def gen_bit_chunk(bit_buf, start_bit=0, stop_bit=1):
 	bit_index = 0 #5個分かぞえるためのindex
 	bit_chunk = [] # data bit(5bit)
 	result = []
+
 	for index in range(len(bit_buf)):
+		# スタートビット
 		if start_bit_index is None:
 			if bit_buf[index] == start_bit:
 				start_bit_index = index
