@@ -59,9 +59,10 @@ def main():
 
 		# # 20%を超えた後のbufに30％まで入った場合
 		# if num_of_smp >= stable_smp_start:
-		if len(num_of_smp) >= int(num_of_one_bit_smp - stable_smp_start): # 20% ~ one bit
-			zero_num = num_of_smp.count(0)
-			one_num = num_of_smp.count(1)
+		if len(num_of_smp) >= (num_of_one_bit_smp - stable_smp_start): # 20% ~ one bit
+			buf = num_of_smp[0:(stable_smp_end - stable_smp_start)]
+			zero_num = buf.count(0)
+			one_num = buf.count(1)
 			# print(zero_num, one_num)
 			# print(count);count += 1
 			# if not(zero_num == 0 or one_num == 0):
@@ -71,8 +72,9 @@ def main():
 				baudot_result.append(0)
 			else:
 				baudot_result.append(1)
-			print(len(num_of_smp))
-			print(len(formar_noise_buf))
+			# print(len(num_of_smp))
+			# print(len(formar_noise_buf))
+			# print(len((num_of_one_bit_smp - stable_smp_start)))
 			num_of_smp.clear()
 			formar_noise_buf.clear()
 
