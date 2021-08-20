@@ -2,6 +2,28 @@
 This is a Python program to demodulate the radio teletype known as FSK modulation.
 This is the simplest example, and only the Terminal Unit part of the RTTY is implemented. The rest should be coded according to ITA2, for example.
 
+### Convert ogg file to wave format
+
+Install [ffmpeg](https://www.ffmpeg.org/) and run:
+
+~~~
+ffmpeg -i RTTY.ogg -ar 8k -c:a pcm_u8 -f wav rtty3s.wav
+~~~
+
+- -ar: sampling rate
+- -c:a(or -acodec)
+  - c:codec
+  - a:audio 
+- pcm_u8: 8bit
+
+ref: http://www.xucker.jpn.org/pc/ffmpeg_wav.html
+
+## USAGE
+
+```Python
+python3 ./src/rtty8k.py
+```
+
 ## Description of the source code
 
 ~~~
@@ -30,7 +52,7 @@ waveFile.close()
 ~~~
 ## Sample sound file
 should be convet to wave format.<p>
-The input audio file should have a sampling rate of 8000 Hz and a quantization bit rate of unsigned 8 bits.<p>
+The input audio file should have a sampling rate of 8000 Hz and a quantization bit rate of 8 bits.<p>
 https://en.wikipedia.org/wiki/File:RTTY.ogg <p>
 it is from wikipedia<p>
       
