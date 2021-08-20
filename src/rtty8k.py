@@ -7,19 +7,23 @@ smp/45.45
 =1秒のサンプル数/45.45
 =1bitあたりのサンプル数
 =サンプル数/bit
+
+最初のノイズを捨てて，マーク→スペースになった瞬間から取得
+1bitあたりのサンプルのうち，25%を超えたあたりで安定(経験則)するため，
+そこを抽出し，bitのチャンクを生成
+LTRS/FIGSの変換テーブルと照合し，decode
 """
+
 def main():
 	fname='./rtty3s.wav' # should be specify the filename.
 	smp= 8000          # Sampling Rate
 	baud_rate = 45.45   # rtty baud rate
 	num_of_one_bit_smp = int(8000 / baud_rate) # number of 1bit sampling, 176
 	stable_smp_start = int(num_of_one_bit_smp * 0.25) # 25%, 44
-	stable_smp_end = int(num_of_one_bit_smp * 0.3) # 30%, 52.8
 	FQm= smp/914.0     # Mark Frequency 914Hz
 	FQs= smp/1086.0    # Space Frequency 1086Hz
 	wind= 32           # windows size Integer()
 	waveFile = wave.open(fname, 'r')
-	mode = "Letters" # default
 
 	# m: mark, s: space
 	mq=[]
@@ -47,33 +51,38 @@ def main():
 
 	# 最初の1 -> 0(mark -> space)に変わったとこを探す
 	mark_to_space_index = find_mark_to_space_index(whole_smp)
-	remove_first_noize_smp = whole_smp[mark_to_space_index:]
+	remove_first_noize_smp = whole_smp[mark_to_space_index:] # 変化点以降を抽出
 
-	divide_one_bit = [] # 176個ずつに分けた
-	rmv_formar_bit = [] # 前半25%を除いた
+	divide_one_bit = [] # 176個ずつに分けたbit列を格納
 	bit_chunk = [] # 0/1の数から大小比較した結果
-	start = 0
+	start = 0 # break用
 	for item in remove_first_noize_smp:
 		bit_buf = remove_first_noize_smp[start:start+num_of_one_bit_smp:1] # 176個ずつ
 		divide_one_bit.append(bit_buf)
-		rmv_formar_bit.append(bit_buf[stable_smp_start:])
 		start += num_of_one_bit_smp
 		if start >= len(remove_first_noize_smp): # 境界
 			break
 
+	# 25%をすぎたとこの先頭ビットを抽出
 	for item in divide_one_bit:
 		zero_one = item[stable_smp_start] # 25%すぎたとこ
 		bit_chunk.append(zero_one)
 
+	# start:0, stop:1となる7bitを抽出し, 間の5bitを返す
 	data_bit_chunk = gen_bit_chunk(bit_chunk)
+
+	mode = "Letters" # default
 	baudot_result = []
 	for item in data_bit_chunk:
 		decode_result = decode_rtty(item, mode)
-		# print(decode_result)
-		if decode_result is None: # [Figures] or [Letters]
-			pass
+		# mode変換時
+		if decode_result == "[Figures]" or decode_result == "[Letters]":
+			mode = decode_result[1:len(decode_result)-1] #[]を除く
+			print(mode)
 		else:
 			baudot_result.append(decode_result)
+
+
 	for item in baudot_result:
 		print(item, end="")
 	print("")
@@ -86,10 +95,12 @@ def find_mark_to_space_index(bit_buf):
 			return i
 	return None
 
+# 5bitのチャンクを生成
 def gen_bit_chunk(bit_buf, start_bit=0, stop_bit=1):
 	start_bit_index = None
-	bit_index = 0 #5個分かぞえるためのindex
-	bit_chunk = [] # data bit(5bit)
+
+	bit_index = 0		# 5個分かぞえるためのindex
+	bit_chunk = []	# data bit(5bit)
 	result = []
 
 	for index in range(len(bit_buf)):
@@ -98,37 +109,28 @@ def gen_bit_chunk(bit_buf, start_bit=0, stop_bit=1):
 			if bit_buf[index] == start_bit:
 				start_bit_index = index
 		else:
+			# 5bit分抽出(<=だと6bit取得)
 			if bit_index < 5:
 				bit_chunk.append(bit_buf[index])
 				bit_index += 1
 			else:
+				# stop bitなら格納．それ以外なら7bit分を破棄
 				if bit_buf[index] == stop_bit:
 					result.append(bit_chunk)
+				# 初期状態
 				start_bit_index = None
 				bit_index = 0
 				bit_chunk = []
 	return result
 
-
-# def decide_bit_zero_or_one(bit_buf):
-# 	zero_num = bit_buf.count(0)
-# 	one_num = bit_buf.count(1)
-# 	if zero_num > one_num:
-# 		return "0"
-# 	else:
-# 		return "1"
-
-
 # baudt conversion
 def decode_rtty(data, mode):
-	data = ''.join(map(str,data))
-	if mode == "[Figures]":
+	data = ''.join(map(str,data)) #結合
+	# modeに合わせた変換テーブルを使う
+	if mode == "Figures":
 		itr = decode_FIGS(data)
 	else:
 		itr = decode_LTRS(data)
-	if itr == "[Figures]" or itr == "[Letters]":
-		mode = itr
-		return
 	return itr
 
 def decode_LTRS(data):
