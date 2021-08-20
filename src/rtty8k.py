@@ -78,7 +78,6 @@ def main():
 		# mode変換時
 		if decode_result == "[Figures]" or decode_result == "[Letters]":
 			mode = decode_result[1:len(decode_result)-1] #[]を除く
-			print(mode)
 		else:
 			baudot_result.append(decode_result)
 
