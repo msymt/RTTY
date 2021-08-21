@@ -35,10 +35,10 @@ def main():
 	for j in range(waveFile.getnframes()):
 		buf = waveFile.readframes(1) # bytes object
 		# 8bit 符号なし(0 - 255)　→ 符号あり(-127 - 128)にしたい
-		mq.append((buf[0]-128)*np.sin(np.pi*2.0/FQm*j)) # 914のsin, 実部
-		mi.append((buf[0]-128)*np.cos(np.pi*2.0/FQm*j)) # 914のcos，虚部
-		sq.append((buf[0]-128)*np.sin(np.pi*2.0/FQs*j)) # 実部
-		si.append((buf[0]-128)*np.cos(np.pi*2.0/FQs*j)) # 虚部
+		mq.append((buf[0]-128)*np.sin(np.pi*2.0/FQm*j)) # 914のsin, 虚部
+		mi.append((buf[0]-128)*np.cos(np.pi*2.0/FQm*j)) # 914のcos，実部
+		sq.append((buf[0]-128)*np.sin(np.pi*2.0/FQs*j)) # 虚部
+		si.append((buf[0]-128)*np.cos(np.pi*2.0/FQs*j)) # 実部
 
 		# 内積(高速化)
 		sumq = sum(mq);sumi = sum(mi);sumsq = sum(sq);sumsi = sum(si)
